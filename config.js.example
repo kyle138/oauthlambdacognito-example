@@ -1,8 +1,9 @@
 // Replace the values below with the correct settings for your environment and rename file to config.js
 var configuration =
 {
-  "s3-origin": "http://TESTEXAMPLE.s3-website-us-east-1.amazonaws.com/", // The domain or S3 bucket hosting your site with trailing /
-  "apig-generateAuthUrl": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generateauthurl", // Path to your generateAuthUrl API Gateway endpoint
-  "apig-generateToken": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generatetoken", // Path to your generatetoken API Gateway endpoint
-  "IdentityPoolId": "region:TESTEXAMPLE" // Your Cognito IdentityPoolId
+  "s3Origin": "http://TESTEXAMPLE.s3-website-us-east-1.amazonaws.com/", // The domain or S3 bucket hosting your site with trailing /
+  "apigGenerateAuthUrl": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generateauthurl", // Path to your generateAuthUrl API Gateway endpoint
+  "apigGenerateToken": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generatetoken", // Path to your generatetoken API Gateway endpoint
+  "IdentityPoolId": "region:TESTEXAMPLE", // Your Cognito IdentityPoolId
+  "awsRegion": "us-east-1" // The AWS region your Lambda, API Gateway, and Cognito Identity Pool exist in
 }
