@@ -25,7 +25,7 @@ angular.module("homeApp", [])
       accessKey: token.accessKeyId,
       secretKey: token.secretAccessKey,
       sessionToken: token.sessionToken,
-      region: 'us-east-1'
+      region: configuration.awsRegion
     };
     var apigClient = apigClientFactory.newClient(options);
     var body = {
