@@ -74,7 +74,7 @@ angular.module("oauth2cbApp", [])
           },
           LoginId: response.data.email
         };
-        AWS.config.region = 'us-east-1';
+        AWS.config.region = configuration.awsRegion;
         AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
         AWS.config.credentials.get(function(err) {
           if(err) {
