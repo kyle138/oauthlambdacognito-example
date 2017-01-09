@@ -2,7 +2,7 @@
 var configuration =
 {
   "s3-origin": "http://TESTEXAMPLE.s3-website-us-east-1.amazonaws.com/", // The domain or S3 bucket hosting your site with trailing /
-  "apig-generateAuthUrl": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generateAuthUrl", // Path to your generateAuthUrl API Gateway endpoint
+  "apig-generateAuthUrl": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generateauthurl", // Path to your generateAuthUrl API Gateway endpoint
   "apig-generateToken": "https://TESTEXAMPLE.execute-api.us-east-1.amazonaws.com/V1/generatetoken", // Path to your generatetoken API Gateway endpoint
   "IdentityPoolId": "region:TESTEXAMPLE" // Your Cognito IdentityPoolId
 }
