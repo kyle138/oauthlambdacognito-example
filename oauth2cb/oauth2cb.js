@@ -24,9 +24,28 @@ angular.module("oauth2cbApp", [])
         onSuccess: function(data, newRecords) {
           $scope.status.push("Local Dataset synchronized with Cognito...");
           console.log("dataset synchronized.");
-          $scope.$apply(function() {
-            $location.url("/");
-          });
+          if(!refresh) {  // Refresh token wasn't supplied by Googs, try to retrieve from Cognito
+            dataset.get('google_refresh_token', function(err, value) {
+              if(value) {
+                console.log("dataset.get: "+ value);
+                storeLocalRefresh(value, function(err, ret) {
+                  if(err) {
+                    console.log("dataset.get:storeLocalRefresh error" + err);
+                  } else {
+                    $scope.$apply(function() {
+                      $location.url("/");
+                    });
+                  }
+                }); // End storeLocalRefresh
+              } else {
+                console.log("dataset.get error: " + err );
+              }
+            }); // End datset.get
+          } else {
+            $scope.$apply(function() {
+              $location.url("/");
+            });
+          }
         },
         onFailure: function(err) {
           console.log("dataset failure: "+err);
@@ -43,10 +62,10 @@ angular.module("oauth2cbApp", [])
         }
       }); //End dataset.synchronize
 
-      dataset = null;
+      //dataset = null;
     }); //End openOrCreateDataset
 
-    syncClient = null;
+    //syncClient = null;
   }; // End storeDataset
 
   // Store user's refresh token in localStorage
@@ -57,6 +76,7 @@ angular.module("oauth2cbApp", [])
       // Save google_refresh_token in browser localStorage
       localStorage.setItem("google_refresh_token", JSON.stringify(refresh));
       $scope.status.push("Refresh token stored locally...");
+      console.log("Refresh token set in localStorage: "+refresh);
       if(typeof cb === 'function' && cb(null, true));
     }
   }; // End storeLocalRefresh
@@ -84,6 +104,7 @@ angular.module("oauth2cbApp", [])
       configuration.apigGenerateToken,
       {params: {code: code}}
     ).then(function(response) {
+      console.log("apigGenerateToken response: "+JSON.stringify(response,null,2));  //DEBUG
       if(response.data.admitted == 1) {   // If user logged in using @hartenergy.com account
         console.log("Google id_token: "+response.data.id_token); //DEBUG
         $scope.status.push("Swapping code for token...");
@@ -117,7 +138,7 @@ angular.module("oauth2cbApp", [])
           localStorage.setItem("awstoken", JSON.stringify(awstoken));
           // Store user's email address and refresh token in Cognito dataset
           if(response.data.refresh_token) { // If refresh_token provided, store separately.
-            console.log("Google refresh_token: "+localStorage.google_refresh_token); //DEBUG
+            console.log("Google refresh_token: "+response.data.refresh_token); //DEBUG
             storeLocalRefresh(response.data.refresh_token);
             storeDataset(response.data.email, response.data.refresh_token);
           } else {
