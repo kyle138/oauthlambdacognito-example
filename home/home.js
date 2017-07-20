@@ -31,14 +31,14 @@ angular.module("homeApp", [])
     var body = {
       "weR": 138  // This is just nonsense, nothing is listening
     };
-    apigClient.sampleGet({},body)
+/*    apigClient.sampleGet({},body)
      .then(function(response) {
        console.log("sampleGet: "+JSON.stringify(response,null,2));  //DEBUG
        cb(response.data);
      }).catch(function(response) {
        alert('sampleGet failed');
        showError(response);
-     });
+     }); */
   };  // End getTables
 
   // 'tis the logout button
@@ -58,12 +58,25 @@ angular.module("homeApp", [])
       $location.url("/login");
     } else {  // Token is current, proceed.
       console.log("Token is still fresh");
-      invokeLambda(null, awstoken, function(res) {
+      AWS.config.credentials.params.Logins['accounts.google.com'] = "Updated Google id_token";
+      AWS.config.credentials.refresh(function(err) {
+        if(err) {
+          console.log("AWS.config.credentials.refresh Error: "+err);
+          return;
+        } else {
+          console.log("refresh.cognitoIdentityId "+AWS.config.credentials.identityId);
+          console.log("refresh.accessKeyId "+AWS.config.credentials.accessKeyId);
+          console.log("refresh.secretAccessKey "+AWS.config.credentials.secretAccessKey);
+          console.log("refresh.sessionToken "+AWS.config.credentials.sessionToken);
+          console.log("refresh.expireTime "+AWS.config.credentials.expireTime);
+        }
+      });
+/*      invokeLambda(null, awstoken, function(res) {
         $scope.$apply(function() {
           $scope.salutations = "Hello "+awstoken.emailAdrs;
           $scope.lambdaReturn = res; // Display numTables
         }); // End scope.apply
-      }); // End getTables
+      }); // End getTables */
     } // End If Expired
   } // End If !localStorage.awstoken
 
