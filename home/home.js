@@ -71,7 +71,7 @@ angular.module("homeApp", [])
             Logins: {
               'accounts.google.com': response.data.id_token
             },
-            LoginId: "kmunz@hartenergy.com" //response.data.email
+            LoginId: awstoken.emailAdrs
           };
           AWS.config.region = 'us-east-1';
           AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
@@ -112,7 +112,7 @@ angular.module("homeApp", [])
             Logins: {
               'accounts.google.com': response.data.id_token
             },
-            LoginId: "kmunz@hartenergy.com" //response.data.email
+            LoginId: awstoken.emailAdrs
           };
           AWS.config.region = 'us-east-1';
           AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
