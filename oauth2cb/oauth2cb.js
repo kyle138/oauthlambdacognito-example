@@ -140,6 +140,7 @@ angular.module("oauth2cbApp", [])
             "secretAccessKey": AWS.config.credentials.secretAccessKey,
             "sessionToken": AWS.config.credentials.sessionToken,
             "expireTime": AWS.config.credentials.expireTime,
+            "refreshExpire10": (new Date()).getTime()+(1000*60*60*10),
             "emailAdrs": response.data.email
           };
           console.log("awstoken: "+JSON.stringify(awstoken,null,2));  //DEBUG
