@@ -114,7 +114,6 @@ angular.module("oauth2cbApp", [])
       configuration.apigGenerateToken,
       {params: {code: code}}
     ).then(function(response) {
-      console.log("apigGenerateToken response: "+JSON.stringify(response,null,2));  //DEBUG
       if(response.data.admitted == 1) {   // If user logged in using @hartenergy.com account
         console.log("Google id_token: "+response.data.id_token); //DEBUG
         $scope.status.push("Swapping code for token...");

@@ -68,7 +68,6 @@ angular.module("homeApp", [])
             $location.url("/login");
           } else {
             if(!AWS.config.credentials) {
-              console.log("get apigRefreshToken response: "+JSON.stringify(response,null,2));  //DEBUG
               console.log("Creating AWS.config.credentials");
               var cognitoParams = {
                 IdentityPoolId: configuration.IdentityPoolId,
