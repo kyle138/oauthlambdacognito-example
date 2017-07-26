@@ -1,29 +1,95 @@
 angular.module("oauth2cbApp", [])
 .controller("oauth2cbCtrl", function($scope, $http, $window, $location, $timeout) {
-
+  console.log("ctrl start");
   $scope.status = ["Gathering energy..."];
   var code = getUrlVars()["code"];
 
-  // Store user's email adrs in Cognito userInfo dataset
-  function storeDataset(err, email, cb) {
+  // Store user's email adrs and refresh token in Cognito userInfo dataset
+  function storeDataset(email, refresh, cb) {
     var syncClient = new AWS.CognitoSyncManager();
     syncClient.openOrCreateDataset('userInfo',function(err, dataset) {
-      dataset.put('email', email, function(err, record) {
-        dataset.synchronize({
-          onSuccess: function(data, newRecords) {
-            $scope.status.push("Dataset stored...");
-            console.log("dataset stored");
+      if(email) {
+        dataset.put('email', email, function(err, record) {
+          $scope.status.push("Email stored in Dataset...");
+          console.log("dataset stored: email");
+        });
+      }
+      if(refresh) {
+        dataset.put('google_refresh_token', refresh, function(err,record) {
+          $scope.status.push("Refresh token stored in Dataset...");
+          console.log("dataset stored: refresh");
+        });
+      }
+      dataset.synchronize({
+        onSuccess: function(data, newRecords) {
+          $scope.status.push("Local Dataset synchronized with Cognito...");
+          console.log("dataset synchronized.");
+          if(!refresh) {  // Refresh token wasn't supplied by Googs, try to retrieve from Cognito
+            dataset.get('google_refresh_token', function(err, value) {
+              if(value) {
+                console.log("dataset.get: "+ value);
+                storeLocalGoogleRefresh(value, function(err, ret) {
+                  if(err) {
+                    console.log("dataset.get:storeLocalRefresh error" + err);
+                  } else {
+                    $scope.$apply(function() {
+                      $location.url("/");
+                    });
+                  }
+                }); // End storeLocalRefresh
+              } else {
+                console.log("dataset.get google_refresh_token error: " + err );
+              }
+            }); // End dataset.get
+          } else {
             $scope.$apply(function() {
               $location.url("/");
             });
-          },
-          onFailure: function(err) {
-            console.log("dataset failure: "+err);
           }
-        }); //End dataset.synchronize
-      }); //End dataset.put
+        },
+        onFailure: function(err) {
+          console.log("dataset failure: "+err);
+        },
+        onConflict: function(data, conflicts, callback) {
+          var resolved = [];
+          for (var i=0; i<conflicts.length; i++) {
+            // Overwrite the remote version with the local version
+            console.log("Dataset conflict: overwriting with local version..."); // DEBUG
+            resolved.push(conflicts[i].resolveWithLocalRecord());
+          }
+          dataset.resolve(resolved, function() {
+            return callback(true);
+          });
+        }
+      }); //End dataset.synchronize
     }); //End openOrCreateDataset
   }; // End storeDataset
+
+  // Store user's refresh token in localStorage
+  function storeLocalGoogleRefresh(refresh, cb) {
+    if(!refresh) { //refresh token is required
+      if(typeof cb === 'function' && cb("Error: refresh is required.", null));
+    } else {
+      // Save google_refresh_token in browser localStorage
+      localStorage.setItem("google_refresh_token", refresh);
+      $scope.status.push("Refresh token stored locally...");
+      console.log("Google refresh token set in localStorage: "+refresh);
+      if(typeof cb === 'function' && cb(null, true));
+    }
+  }; // End storeLocalGoogleRefresh
+
+  // Store user's access token in localStorage
+  function storeLocalGoogleAccess(access, cb) {
+    if(!access) { //access token is required
+      if(typeof cb === 'function' && cb("Error: access or access is required.", null));
+    } else {
+      // Save google_access_token in browser localStorage
+      localStorage.setItem("google_access_token", access);
+      $scope.status.push("Access token stored locally...");
+      console.log("Google access token set in localStorage: "+access);
+      if(typeof cb === 'function' && cb(null, true));
+    }
+  }; // End storeLocalGoogleAccess
 
   // Return GET variables from URL
   function getUrlVars() {
@@ -35,17 +101,6 @@ angular.module("oauth2cbApp", [])
     $scope.status.push("Code extracted...");
     return vars;
   }; // End getUrlVars
-
-  function storeRefresh(refresh, cb) {
-    if(!refresh) { //refresh token is required
-      if(typeof cb === 'function' && cb("Error: refresh is required.", null));
-    } else {
-      // Save google_refresh_token in browser localStorage
-      localStorage.setItem("google_refresh_token", JSON.stringify(refresh));
-      $scope.status.push("Refresh token stored...");
-      if(typeof cb === 'function' && cb(null, true));
-    }
-  }; // End storeRefresh
 
   if(!code) { //If we do not have a code, redirect to login/
     console.log("No code");
@@ -60,11 +115,7 @@ angular.module("oauth2cbApp", [])
       {params: {code: code}}
     ).then(function(response) {
       if(response.data.admitted == 1) {   // If user logged in using @hartenergy.com account
-        if(response.data.refresh_token) { // If refresh_token provided, store separately.
-          storeRefresh(response.data.refresh_token);
-        }
         console.log("Google id_token: "+response.data.id_token); //DEBUG
-        console.log("Google refresh_token: "+localStorage.google_refresh_token); //DEBUG
         $scope.status.push("Swapping code for token...");
         // Exchange Google token for Cognito ID
         var cognitoParams = {
@@ -74,7 +125,7 @@ angular.module("oauth2cbApp", [])
           },
           LoginId: response.data.email
         };
-        AWS.config.region = configuration.awsRegion;
+        AWS.config.region = 'us-east-1';
         AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
         AWS.config.credentials.get(function(err) {
           if(err) {
@@ -88,14 +139,25 @@ angular.module("oauth2cbApp", [])
             "secretAccessKey": AWS.config.credentials.secretAccessKey,
             "sessionToken": AWS.config.credentials.sessionToken,
             "expireTime": AWS.config.credentials.expireTime,
+            "refreshExpire10": (new Date()).getTime()+(1000*60*60*10),
             "emailAdrs": response.data.email
           };
           console.log("awstoken: "+JSON.stringify(awstoken,null,2));  //DEBUG
           $scope.status.push("Swapping token for AWS credentials");
           // Save awstoken in browser localStorage
           localStorage.setItem("awstoken", JSON.stringify(awstoken));
-          // Store user's email address in Cognito dataset
-          storeDataset(null, response.data.email);
+          // Store user's email address and refresh token in Cognito dataset
+          if(response.data.refresh_token) { // If refresh_token provided, store separately.
+            console.log("Google refresh_token: "+response.data.refresh_token); //DEBUG
+            storeLocalGoogleRefresh(response.data.refresh_token);
+            storeLocalGoogleAccess(response.data.access_token);
+            storeDataset(response.data.email, response.data.refresh_token);
+          } else {
+            console.log("No refresh, so sad.");
+            console.log("Storing email in dataset: "+response.data.email);
+            storeLocalGoogleAccess(response.data.access_token);
+            storeDataset(response.data.email);
+          }
         }); //End AWS.config.credentials.get()
       } else {  // Not a @hartenergy.com google account
         console.log("generatetoken error: ",JSON.stringify(response,2,null));
